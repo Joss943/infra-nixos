@@ -10,4 +10,5 @@
 
   console.keyMap = "fr";
   i18n.defaultLocale = "fr_FR.UTF-8";
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 }
