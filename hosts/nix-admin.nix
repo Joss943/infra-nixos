@@ -1,19 +1,15 @@
 { config, pkgs, ... }:
 
 {
-  networking.hostName = "nix-admin";
-
-  services.openssh.enable = true;
-
-  users.users.admin = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-  };
-
-  environment.systemPackages = with pkgs; [
-    git
-    vim
+  imports = [
+    ../modules/common.nix
+    ../hardware/nix-admin-hardware.nix
   ];
+
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  networking.hostName = "nix-admin";
 
   system.stateVersion = "25.11";
 }
