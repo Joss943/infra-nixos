@@ -12,13 +12,16 @@
     wantedBy = [ "multi-user.target" ];
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
+
     serviceConfig = {
       Type = "oneshot";
       User = "root";
     };
+
     script = ''
       sleep 10
       ${pkgs.curl}/bin/curl -L https://raw.githubusercontent.com/ribmic21-cloud/infra-nixos/main/install.sh -o /tmp/install.sh
+      chmod +x /tmp/install.sh
       ${pkgs.bash}/bin/bash /tmp/install.sh
     '';
   };
