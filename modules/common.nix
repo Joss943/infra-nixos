@@ -17,9 +17,13 @@
   services.displayManager.gdm.enable = true;
   services.desktopManager.gnome.enable = true;
   services.xserver.videoDrivers = [ "fbdev" ];
-  
+
+  services.xserver.xkb = {
+    layout = "fr";
+  };
+
+  console.keyMap = "fr";
+
   i18n.defaultLocale = "fr_FR.UTF-8";
 }
-
-
 
