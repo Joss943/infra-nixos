@@ -1,28 +1,20 @@
-{ config, pkgs, ... }:
+systemd.services.auto-install = {
+  description = "Auto Install NixOS";
 
-{
-  imports = [
-    <nixpkgs/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix>
-  ];
+  wantedBy = [ "default.target" ];   # 
 
-  services.getty.autologinUser = "nixos";
+  after = [ "network-online.target" ];
+  wants = [ "network-online.target" ];
 
-  systemd.services.auto-install = {
-    description = "Auto Install NixOS";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-
-    serviceConfig = {
-      Type = "oneshot";
-      User = "root";
-    };
-
-    script = ''
-      sleep 10
-      ${pkgs.curl}/bin/curl -L https://raw.githubusercontent.com/ribmic21-cloud/infra-nixos/main/install.sh -o /tmp/install.sh
-      chmod +x /tmp/install.sh
-      ${pkgs.bash}/bin/bash /tmp/install.sh
-    '';
+  serviceConfig = {
+    Type = "oneshot";
   };
-}
+
+  script = ''
+    sleep 15
+    echo "Starting auto install..."
+    ${pkgs.curl}/bin/curl -L https://raw.githubusercontent.com/ribmic21-cloud/infra-nixos/main/install.sh -o /tmp/install.sh
+    chmod +x /tmp/install.sh
+    ${pkgs.bash}/bin/bash /tmp/install.sh
+  '';
+};
