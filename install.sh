@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export PATH=/run/current-system/sw/bin:$PATH
+
 echo "🚀 Installation automatique NixOS"
 
 DISK="$(
