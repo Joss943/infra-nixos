@@ -7,6 +7,25 @@
 
   console.keyMap = "fr";
 
+  boot.initrd.availableKernelModules = [
+    "xhci_pci"
+    "ahci"
+    "nvme"
+    "usb_storage"
+    "sd_mod"
+    "uas"
+  ];
+
+  boot.kernelModules = [
+    "uas"
+  ];
+
+  boot.supportedFilesystems = [ "ext4" "vfat" "ntfs" ];
+
+  boot.kernelParams = [
+    "usbcore.autosuspend=-1"
+  ];
+
   services.getty.autologinUser = "nixos";
 
   systemd.services.auto-install = {
