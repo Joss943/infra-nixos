@@ -13,6 +13,13 @@
           ./hosts/nix-admin/configuration.nix
         ];
       };
+
+      nix-auto = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          ./hosts/nix-auto/configuration.nix
+        ];
+      };
     };
   };
 }
