@@ -2,8 +2,8 @@
 
 {
   imports = [
-    ../modules/common.nix
-    ../hardware/nix-admin-hardware.nix
+    ../../roles/workstation.nix
+    ./hardware-configuration.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
