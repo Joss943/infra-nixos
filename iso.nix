@@ -7,13 +7,16 @@
 
   console.keyMap = "fr";
 
+  # 
   boot.initrd.availableKernelModules = [
     "xhci_pci"
+    "ehci_pci"
     "ahci"
     "nvme"
     "usb_storage"
-    "sd_mod"
     "uas"
+    "sd_mod"
+    "sr_mod"
   ];
 
   boot.kernelModules = [
@@ -22,8 +25,11 @@
 
   boot.supportedFilesystems = [ "ext4" "vfat" "ntfs" ];
 
+  # 
   boot.kernelParams = [
     "usbcore.autosuspend=-1"
+    "rootdelay=10"
+    "loglevel=7"
   ];
 
   services.getty.autologinUser = "nixos";
