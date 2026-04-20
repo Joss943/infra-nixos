@@ -50,6 +50,4 @@
       enable-cache services no
     '';
   };
-
-  services.sssd.enable = true;
 }
