@@ -49,9 +49,5 @@
       enable-cache services no
     '';
   };
-
-  # Active SSSD, mais sans config de domaine stockée dans le repo public
-  services.sssd.enable = true;
-
   system.stateVersion = "25.11";
 }
