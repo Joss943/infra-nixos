@@ -4,7 +4,6 @@
 imports = [
   ../../roles/workstation.nix
   ./hardware-configuration.nix
-  ../../../infra-nixos-private/hosts/nix-auto-enterprise.nix
 ];
 
   boot.loader.systemd-boot.enable = true;
