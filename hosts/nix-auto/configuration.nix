@@ -4,6 +4,7 @@
   imports = [
     ../../roles/workstation.nix
     ./hardware-configuration.nix
+    ../../../infra-nixos-private/hosts/nix-auto-entreprise.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -24,17 +25,14 @@
     realmd
   ];
 
-  # Prépare Kerberos sans mettre ton vrai domaine dans Git
   security.krb5.enable = true;
 
-  # Création auto du home au premier login
   security.pam = {
     makeHomeDir.umask = "077";
     services.login.makeHomeDir = true;
     services.sshd.makeHomeDir = true;
   };
 
-  # Recommandé avec SSSD
   services.nscd = {
     enable = true;
     config = ''
@@ -49,5 +47,6 @@
       enable-cache services no
     '';
   };
+
   system.stateVersion = "25.11";
 }
