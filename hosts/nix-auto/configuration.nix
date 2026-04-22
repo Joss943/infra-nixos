@@ -1,11 +1,11 @@
 { config, pkgs, ... }:
 
 {
-  imports = [
-    ../../roles/workstation.nix
-    ./hardware-configuration.nix
-    ../../../infra-nixos-private/hosts/nix-auto-entreprise.nix
-  ];
+imports = [
+  ../../roles/workstation.nix
+  ./hardware-configuration.nix
+  ../../../infra-nixos-private/hosts/nix-auto-enterprise.nix
+];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
