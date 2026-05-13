@@ -9,9 +9,8 @@ REPO_URL="https://github.com/ribmic21-cloud/infra-nixos.git"
 echo "🚀 Installation automatique NixOS"
 
 DISK="$(
-  lsblk -dpno NAME,TYPE \
-  | awk '$2=="disk"{print $1}' \
-  | grep -vE '/dev/sr|/dev/loop' \
+  lsblk -dpno NAME,TYPE,RM \
+  | awk '$2=="disk" && $3=="0" {print $1}' \
   | head -n1
 )"
 
