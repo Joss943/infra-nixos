@@ -1,3 +1,6 @@
+# install-luks.sh corrigé
+
+```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -14,7 +17,7 @@ REPO_URL="https://github.com/ribmic21-cloud/infra-nixos.git"
 # Génération clé forte
 ##################################################
 
-LUKS_SECRET="$(head -c 64 /dev/urandom | base64)"
+LUKS_SECRET="$(head -c 64 /dev/urandom | base64 -w0)"
 
 ##################################################
 # PIN utilisateur
@@ -23,30 +26,30 @@ LUKS_SECRET="$(head -c 64 /dev/urandom | base64)"
 USER_PIN="123456"
 
 ##################################################
-# Affichage DSI
+# Affichage
 ##################################################
 
 clear
 
 echo ""
 echo "========================================="
-echo "🚀 INSTALLATION NIXOS ENTREPRISE"
+echo "INSTALLATION NIXOS ENTREPRISE"
 echo "========================================="
 echo ""
 echo "Hostname : $HOSTNAME"
 echo ""
-echo "🔐 LUKS SECRET :"
+echo "LUKS SECRET :"
 echo "$LUKS_SECRET"
 echo ""
-echo "🔑 USER PIN :"
+echo "USER PIN :"
 echo "$USER_PIN"
 echo ""
-echo "⚠️ SAUVEGARDER DANS KEEPASS"
+echo "SAUVEGARDER DANS KEEPASS"
 echo ""
 echo "========================================="
 echo ""
 
-sleep 15
+sleep 10
 
 ##################################################
 # Détection disque
@@ -59,40 +62,49 @@ DISK="$(
 )"
 
 if [ -z "${DISK:-}" ]; then
-  echo "❌ Aucun disque détecté."
+  echo "Aucun disque détecté"
   exit 1
 fi
 
-echo "✅ Disque cible : $DISK"
+echo "Disque cible : $DISK"
 
-sleep 3
+##################################################
+# Nettoyage environnement
+##################################################
+
+swapoff -a 2>/dev/null || true
+
+umount -R /mnt 2>/dev/null || true
+
+if cryptsetup status cryptroot >/dev/null 2>&1; then
+  cryptsetup close cryptroot
+fi
 
 ##################################################
 # Nettoyage disque
 ##################################################
 
-swapoff -a || true
-
-umount -R /mnt 2>/dev/null || true
-
 wipefs -af "$DISK"
-
 sgdisk --zap-all "$DISK"
 
 partprobe "$DISK"
+udevadm settle
 
 sleep 2
 
 ##################################################
-# Partitionnement
+# Partitionnement GPT
 ##################################################
 
-parted -s "$DISK" -- mklabel gpt
+parted -s "$DISK" mklabel gpt
 
-parted -s "$DISK" -- mkpart ESP fat32 1MiB 512MiB
-parted -s "$DISK" -- set 1 esp on
+parted -s "$DISK" mkpart ESP fat32 1MiB 512MiB
+parted -s "$DISK" set 1 esp on
 
-parted -s "$DISK" -- mkpart primary 512MiB 100%
+parted -s "$DISK" mkpart primary 512MiB 100%
+
+partprobe "$DISK"
+udevadm settle
 
 ##################################################
 # Gestion NVMe / SATA
@@ -113,20 +125,40 @@ fi
 mkfs.vfat -F 32 "$EFI_PART"
 
 ##################################################
-# Configuration LUKS2
+# Nettoyage ancienne signature LUKS
 ##################################################
 
-echo -n "$LUKS_SECRET" | \
-cryptsetup luksFormat "$CRYPT_PART" -d -
+wipefs -af "$CRYPT_PART"
 
-echo -n "$LUKS_SECRET" | \
-cryptsetup open "$CRYPT_PART" cryptroot -d -
+##################################################
+# Création LUKS2
+##################################################
+
+printf "%s" "$LUKS_SECRET" | \
+cryptsetup luksFormat \
+  --batch-mode \
+  --type luks2 \
+  "$CRYPT_PART" \
+  --key-file -
+
+##################################################
+# Ouverture LUKS
+##################################################
+
+printf "%s" "$LUKS_SECRET" | \
+cryptsetup open \
+  "$CRYPT_PART" \
+  cryptroot \
+  --key-file -
 
 ##################################################
 # Ajout PIN utilisateur
 ##################################################
 
-echo -e "$LUKS_SECRET\n$USER_PIN\n$USER_PIN" | \
+printf "%s\n%s\n%s" \
+  "$LUKS_SECRET" \
+  "$USER_PIN" \
+  "$USER_PIN" | \
 cryptsetup luksAddKey "$CRYPT_PART"
 
 ##################################################
@@ -155,6 +187,8 @@ nixos-generate-config --root /mnt
 # Clone repo infra
 ##################################################
 
+rm -rf /tmp/infra-nixos
+
 git clone "$REPO_URL" /tmp/infra-nixos
 
 ##################################################
@@ -180,22 +214,89 @@ nixos-install \
 
 echo ""
 echo "========================================="
-echo "✅ INSTALLATION TERMINÉE"
+echo "INSTALLATION TERMINÉE"
 echo "========================================="
 echo ""
 echo "Hostname : $HOSTNAME"
 echo ""
-echo "🔐 LUKS SECRET :"
+echo "LUKS SECRET :"
 echo "$LUKS_SECRET"
 echo ""
-echo "🔑 USER PIN :"
+echo "USER PIN :"
 echo "$USER_PIN"
 echo ""
-echo "⚠️ SAUVEGARDER DANS KEEPASS"
+echo "SAUVEGARDER DANS KEEPASS"
 echo ""
 echo "========================================="
 echo ""
 
-sleep 20
+sleep 10
 
 reboot
+```
+
+# Les vrais problèmes dans ton script original
+
+## 1. cryptroot jamais fermé
+
+Tu nettoyais le disque sans fermer le mapping LUKS existant.
+
+Il fallait :
+
+```bash
+cryptsetup close cryptroot
+```
+
+avant :
+
+```bash
+wipefs -af "$DISK"
+```
+
+---
+
+## 2. `echo -n` fragile avec cryptsetup
+
+`printf` est beaucoup plus fiable.
+
+Remplacement :
+
+```bash
+printf "%s" "$LUKS_SECRET"
+```
+
+---
+
+## 3. luksFormat sans --batch-mode
+
+Sans `--batch-mode`, cryptsetup peut demander une confirmation interactive même avec stdin.
+
+Ça peut casser l'automatisation.
+
+---
+
+## 4. Anciennes signatures LUKS
+
+Même après repartitionnement, certaines signatures peuvent rester visibles.
+
+Ajout :
+
+```bash
+wipefs -af "$CRYPT_PART"
+```
+
+avant `luksFormat`.
+
+---
+
+## 5. udev pas synchronisé
+
+Après `parted`, les devices `/dev/nvme0n1p1` et `p2` ne sont pas toujours immédiatement prêts.
+
+Ajout :
+
+```bash
+udevadm settle
+```
+
+après `partprobe`.
