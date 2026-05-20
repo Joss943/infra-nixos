@@ -11,31 +11,42 @@ HOSTNAME="nix-auto"
 REPO_URL="https://github.com/ribmic21-cloud/infra-nixos.git"
 
 ##################################################
-# Génération passphrase automatique
+# Génération clé forte
 ##################################################
 
-LUKS_PASSWORD="$(head -c 32 /dev/urandom | base64)"
+LUKS_SECRET="$(head -c 64 /dev/urandom | base64)"
 
 ##################################################
-# Affichage infos DSI
+# PIN utilisateur
 ##################################################
+
+USER_PIN="123456"
+
+##################################################
+# Affichage DSI
+##################################################
+
+clear
 
 echo ""
 echo "========================================="
-echo "🚀 Installation NixOS + LUKS"
+echo "🚀 INSTALLATION NIXOS ENTREPRISE"
 echo "========================================="
 echo ""
 echo "Hostname : $HOSTNAME"
 echo ""
-echo "🔐 LUKS PASSWORD :"
-echo "$LUKS_PASSWORD"
+echo "🔐 LUKS SECRET :"
+echo "$LUKS_SECRET"
 echo ""
-echo "⚠️ COPIER CETTE CLÉ DANS KEEPASS"
+echo "🔑 USER PIN :"
+echo "$USER_PIN"
+echo ""
+echo "⚠️ SAUVEGARDER DANS KEEPASS"
 echo ""
 echo "========================================="
 echo ""
 
-sleep 10
+sleep 15
 
 ##################################################
 # Détection disque
@@ -102,17 +113,24 @@ fi
 mkfs.vfat -F 32 "$EFI_PART"
 
 ##################################################
-# Configuration LUKS2 automatique
+# Configuration LUKS2
 ##################################################
 
-echo -n "$LUKS_PASSWORD" | \
+echo -n "$LUKS_SECRET" | \
 cryptsetup luksFormat "$CRYPT_PART" -d -
 
-echo -n "$LUKS_PASSWORD" | \
+echo -n "$LUKS_SECRET" | \
 cryptsetup open "$CRYPT_PART" cryptroot -d -
 
 ##################################################
-# Filesystem root
+# Ajout PIN utilisateur
+##################################################
+
+echo -e "$LUKS_SECRET\n$USER_PIN\n$USER_PIN" | \
+cryptsetup luksAddKey "$CRYPT_PART"
+
+##################################################
+# Filesystem
 ##################################################
 
 mkfs.ext4 -F /dev/mapper/cryptroot
@@ -149,7 +167,7 @@ cp /mnt/etc/nixos/hardware-configuration.nix \
   "/tmp/infra-nixos/hosts/${HOSTNAME}/hardware-configuration.nix"
 
 ##################################################
-# Installation flake
+# Installation NixOS
 ##################################################
 
 nixos-install \
@@ -157,24 +175,27 @@ nixos-install \
   --flake "/tmp/infra-nixos#${HOSTNAME}"
 
 ##################################################
-# Informations finales
+# Fin
 ##################################################
 
 echo ""
 echo "========================================="
-echo "✅ Installation terminée"
+echo "✅ INSTALLATION TERMINÉE"
 echo "========================================="
 echo ""
 echo "Hostname : $HOSTNAME"
 echo ""
-echo "🔐 LUKS PASSWORD :"
-echo "$LUKS_PASSWORD"
+echo "🔐 LUKS SECRET :"
+echo "$LUKS_SECRET"
+echo ""
+echo "🔑 USER PIN :"
+echo "$USER_PIN"
 echo ""
 echo "⚠️ SAUVEGARDER DANS KEEPASS"
 echo ""
 echo "========================================="
 echo ""
 
-sleep 15
+sleep 20
 
 reboot
