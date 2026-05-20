@@ -3,10 +3,39 @@ set -euo pipefail
 
 export PATH=/run/current-system/sw/bin:$PATH
 
+##################################################
+# Variables
+##################################################
+
 HOSTNAME="nix-auto"
 REPO_URL="https://github.com/ribmic21-cloud/infra-nixos.git"
 
-echo "🚀 Installation NixOS avec LUKS"
+##################################################
+# Génération passphrase automatique
+##################################################
+
+LUKS_PASSWORD="$(head -c 32 /dev/urandom | base64)"
+
+##################################################
+# Affichage infos DSI
+##################################################
+
+echo ""
+echo "========================================="
+echo "🚀 Installation NixOS + LUKS"
+echo "========================================="
+echo ""
+echo "Hostname : $HOSTNAME"
+echo ""
+echo "🔐 LUKS PASSWORD :"
+echo "$LUKS_PASSWORD"
+echo ""
+echo "⚠️ COPIER CETTE CLÉ DANS KEEPASS"
+echo ""
+echo "========================================="
+echo ""
+
+sleep 10
 
 ##################################################
 # Détection disque
@@ -24,6 +53,7 @@ if [ -z "${DISK:-}" ]; then
 fi
 
 echo "✅ Disque cible : $DISK"
+
 sleep 3
 
 ##################################################
@@ -72,14 +102,14 @@ fi
 mkfs.vfat -F 32 "$EFI_PART"
 
 ##################################################
-# LUKS2
+# Configuration LUKS2 automatique
 ##################################################
 
-echo "🔐 Configuration chiffrement disque"
+echo -n "$LUKS_PASSWORD" | \
+cryptsetup luksFormat "$CRYPT_PART" -d -
 
-cryptsetup luksFormat "$CRYPT_PART"
-
-cryptsetup open "$CRYPT_PART" cryptroot
+echo -n "$LUKS_PASSWORD" | \
+cryptsetup open "$CRYPT_PART" cryptroot -d -
 
 ##################################################
 # Filesystem root
@@ -126,11 +156,25 @@ nixos-install \
   --no-root-passwd \
   --flake "/tmp/infra-nixos#${HOSTNAME}"
 
+##################################################
+# Informations finales
+##################################################
+
 echo ""
+echo "========================================="
 echo "✅ Installation terminée"
+echo "========================================="
 echo ""
-echo "⚠️ Au prochain boot :"
-echo "Le mot de passe LUKS sera demandé."
+echo "Hostname : $HOSTNAME"
 echo ""
+echo "🔐 LUKS PASSWORD :"
+echo "$LUKS_PASSWORD"
+echo ""
+echo "⚠️ SAUVEGARDER DANS KEEPASS"
+echo ""
+echo "========================================="
+echo ""
+
+sleep 15
 
 reboot
