@@ -1,6 +1,3 @@
-# install-luks.sh corrigé
-
-```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -33,18 +30,18 @@ clear
 
 echo ""
 echo "========================================="
-echo "INSTALLATION NIXOS ENTREPRISE"
+echo "🚀 INSTALLATION NIXOS ENTREPRISE"
 echo "========================================="
 echo ""
 echo "Hostname : $HOSTNAME"
 echo ""
-echo "LUKS SECRET :"
+echo "🔐 LUKS SECRET :"
 echo "$LUKS_SECRET"
 echo ""
-echo "USER PIN :"
+echo "🔑 USER PIN :"
 echo "$USER_PIN"
 echo ""
-echo "SAUVEGARDER DANS KEEPASS"
+echo "⚠️ SAUVEGARDER DANS KEEPASS"
 echo ""
 echo "========================================="
 echo ""
@@ -62,11 +59,11 @@ DISK="$(
 )"
 
 if [ -z "${DISK:-}" ]; then
-  echo "Aucun disque détecté"
+  echo "❌ Aucun disque détecté."
   exit 1
 fi
 
-echo "Disque cible : $DISK"
+echo "✅ Disque cible : $DISK"
 
 ##################################################
 # Nettoyage environnement
@@ -85,9 +82,11 @@ fi
 ##################################################
 
 wipefs -af "$DISK"
+
 sgdisk --zap-all "$DISK"
 
 partprobe "$DISK"
+
 udevadm settle
 
 sleep 2
@@ -104,6 +103,7 @@ parted -s "$DISK" set 1 esp on
 parted -s "$DISK" mkpart primary 512MiB 100%
 
 partprobe "$DISK"
+
 udevadm settle
 
 ##################################################
@@ -214,18 +214,18 @@ nixos-install \
 
 echo ""
 echo "========================================="
-echo "INSTALLATION TERMINÉE"
+echo "✅ INSTALLATION TERMINÉE"
 echo "========================================="
 echo ""
 echo "Hostname : $HOSTNAME"
 echo ""
-echo "LUKS SECRET :"
+echo "🔐 LUKS SECRET :"
 echo "$LUKS_SECRET"
 echo ""
-echo "USER PIN :"
+echo "🔑 USER PIN :"
 echo "$USER_PIN"
 echo ""
-echo "SAUVEGARDER DANS KEEPASS"
+echo "⚠️ SAUVEGARDER DANS KEEPASS"
 echo ""
 echo "========================================="
 echo ""
@@ -233,70 +233,3 @@ echo ""
 sleep 10
 
 reboot
-```
-
-# Les vrais problèmes dans ton script original
-
-## 1. cryptroot jamais fermé
-
-Tu nettoyais le disque sans fermer le mapping LUKS existant.
-
-Il fallait :
-
-```bash
-cryptsetup close cryptroot
-```
-
-avant :
-
-```bash
-wipefs -af "$DISK"
-```
-
----
-
-## 2. `echo -n` fragile avec cryptsetup
-
-`printf` est beaucoup plus fiable.
-
-Remplacement :
-
-```bash
-printf "%s" "$LUKS_SECRET"
-```
-
----
-
-## 3. luksFormat sans --batch-mode
-
-Sans `--batch-mode`, cryptsetup peut demander une confirmation interactive même avec stdin.
-
-Ça peut casser l'automatisation.
-
----
-
-## 4. Anciennes signatures LUKS
-
-Même après repartitionnement, certaines signatures peuvent rester visibles.
-
-Ajout :
-
-```bash
-wipefs -af "$CRYPT_PART"
-```
-
-avant `luksFormat`.
-
----
-
-## 5. udev pas synchronisé
-
-Après `parted`, les devices `/dev/nvme0n1p1` et `p2` ne sont pas toujours immédiatement prêts.
-
-Ajout :
-
-```bash
-udevadm settle
-```
-
-après `partprobe`.
