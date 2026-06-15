@@ -10,15 +10,7 @@
     serviceConfig = {
       Type = "oneshot";
       User = "root";
+      ExecStart = "/bin/bash -c 'cd /tmp && rm -rf infra-nixos && git clone https://github.com/Joss943/infra-nixos.git && nixos-rebuild switch --flake /tmp/infra-nixos#nix-auto &'";
     };
-
-    script = '
-      cd /tmp
-      rm -rf infra-nixos
-      git clone https://github.com/Joss943/infra-nixos.git
-      cp -r infra-nixos/modules/* /etc/nixos/modules/
-      cp -r infra-nixos/hosts/* /etc/nixos/hosts/
-      nixos-rebuild switch --flake /etc/nixos#nix-auto
-    ';
   };
 }
